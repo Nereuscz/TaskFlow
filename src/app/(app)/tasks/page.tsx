@@ -8,17 +8,16 @@ import { TaskDetail } from "@/components/tasks/TaskDetail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, CheckSquare, Search, X } from "lucide-react";
+import { Calendar, CheckSquare, ChevronDown, ChevronRight, Search, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { TaskPriority, TaskStatus } from "@prisma/client";
 
-const STATUS_OPTIONS: { value: TaskStatus | "all"; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "TODO", label: "To Do" },
-  { value: "IN_PROGRESS", label: "In Progress" },
-  { value: "IN_REVIEW", label: "In Review" },
-  { value: "DONE", label: "Done" },
+const STATUS_SECTIONS: { value: TaskStatus; label: string; color: string }[] = [
+  { value: "TODO", label: "To Do", color: "text-slate-500" },
+  { value: "IN_PROGRESS", label: "In Progress", color: "text-blue-500" },
+  { value: "IN_REVIEW", label: "In Review", color: "text-amber-500" },
+  { value: "DONE", label: "Done", color: "text-emerald-500" },
 ];
 
 const PRIORITY_OPTIONS: { value: TaskPriority | "all"; label: string }[] = [
@@ -40,17 +39,120 @@ type TaskItem = {
   _count: { subtasks: number };
 };
 
+function TaskRow({ task }: { task: TaskItem }) {
+  return (
+    <Link
+      href={`/projects/${task.project?.id}?task=${task.id}`}
+      className={cn(
+        "group grid items-center gap-2 px-3 py-2.5 border-b border-border/50 last:border-b-0",
+        "hover:bg-accent/50 transition-colors cursor-pointer",
+        task.status === "DONE" && "opacity-55",
+        "[grid-template-columns:1fr_auto_auto_auto]"
+      )}
+    >
+      <span
+        className={cn(
+          "text-sm truncate pr-4",
+          task.status === "DONE" ? "line-through text-muted-foreground" : "text-foreground"
+        )}
+      >
+        {task.title}
+      </span>
+
+      <div className="flex justify-end">
+        <PriorityBadge priority={task.priority} />
+      </div>
+
+      <div className="w-24 flex justify-end">
+        {task.deadline ? (
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Calendar className="h-3 w-3 shrink-0" />
+            {format(new Date(task.deadline), "MMM d")}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground/30">—</span>
+        )}
+      </div>
+
+      <div className="w-28 flex justify-end">
+        {task.project ? (
+          <span
+            className="text-xs px-2 py-0.5 rounded-full truncate max-w-[7rem]"
+            style={{
+              backgroundColor: task.project.color + "1a",
+              color: task.project.color,
+            }}
+          >
+            {task.project.name}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground/30">—</span>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+function StatusSection({
+  section,
+  tasks,
+}: {
+  section: (typeof STATUS_SECTIONS)[number];
+  tasks: TaskItem[];
+}) {
+  const [expanded, setExpanded] = useState(true);
+
+  if (tasks.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center gap-2 px-3 py-2.5 bg-muted/40 hover:bg-muted/60 transition-colors border-b border-border/60"
+      >
+        {expanded ? (
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        )}
+        <span className={cn("text-xs font-semibold", section.color)}>{section.label}</span>
+        <span className="text-xs text-muted-foreground/60 ml-1">{tasks.length}</span>
+      </button>
+
+      {expanded && (
+        <>
+          <div className="grid px-3 py-1.5 border-b border-border/40 [grid-template-columns:1fr_auto_auto_auto] gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+              Task name
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 text-right">
+              Priority
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 text-right w-24">
+              Due date
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 text-right w-28">
+              Project
+            </span>
+          </div>
+          {tasks.map((task) => (
+            <TaskRow key={task.id} task={task} />
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function TasksPage() {
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "all">("all");
   const [search, setSearch] = useState("");
+  const [collapsedView, setCollapsedView] = useState<"sections" | "flat">("sections");
 
   const { data: tasks, isLoading } = useQuery<TaskItem[]>({
-    queryKey: ["all-tasks", statusFilter],
+    queryKey: ["all-tasks"],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (statusFilter !== "all") params.set("status", statusFilter);
-      const res = await fetch(`/api/tasks?${params}`);
+      const res = await fetch("/api/tasks");
       if (!res.ok) throw new Error("Failed");
       return res.json();
     },
@@ -65,21 +167,43 @@ export default function TasksPage() {
     });
   }, [tasks, priorityFilter, search]);
 
+  const tasksByStatus = useMemo(() => {
+    const map: Record<TaskStatus, TaskItem[]> = {
+      TODO: [],
+      IN_PROGRESS: [],
+      IN_REVIEW: [],
+      DONE: [],
+      CANCELLED: [],
+    };
+    for (const task of filteredTasks) {
+      if (task.status in map) map[task.status].push(task);
+    }
+    return map;
+  }, [filteredTasks]);
+
   const hasActiveFilters = priorityFilter !== "all" || search;
+  const totalVisible = filteredTasks.length;
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
-      <h1 className="text-2xl font-semibold">My Tasks</h1>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">My Tasks</h1>
+        {!isLoading && (
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {totalVisible} task{totalVisible !== 1 ? "s" : ""}
+          </p>
+        )}
+      </div>
 
-      {/* Search + filters */}
-      <div className="space-y-3">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-48">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Search tasks…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 pr-8"
+            className="pl-8 pr-8 h-8 text-sm"
           />
           {search && (
             <button
@@ -91,127 +215,60 @@ export default function TasksPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-x-4 gap-y-2">
-          {/* Status */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {STATUS_OPTIONS.map(({ value, label }) => (
-              <Button
-                key={value}
-                variant={statusFilter === value ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter(value)}
-                className="h-7 text-xs"
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
-
-          <div className="w-px bg-border self-stretch hidden sm:block" />
-
-          {/* Priority */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {PRIORITY_OPTIONS.map(({ value, label }) => (
-              <Button
-                key={value}
-                variant={priorityFilter === value ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setPriorityFilter(value)}
-                className="h-7 text-xs"
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {PRIORITY_OPTIONS.map(({ value, label }) => (
+            <Button
+              key={value}
+              variant={priorityFilter === value ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setPriorityFilter(value)}
+              className="h-7 text-xs"
+            >
+              {label}
+            </Button>
+          ))}
         </div>
 
         {hasActiveFilters && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              {filteredTasks.length} result{filteredTasks.length !== 1 ? "s" : ""}
-            </span>
-            <button
-              onClick={() => { setPriorityFilter("all"); setSearch(""); }}
-              className="text-xs text-primary hover:underline"
-            >
-              Clear filters
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              setPriorityFilter("all");
+              setSearch("");
+            }}
+            className="text-xs text-primary hover:underline ml-auto"
+          >
+            Clear filters
+          </button>
         )}
       </div>
 
+      {/* Content */}
       {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 rounded-lg" />
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 rounded-xl" />
           ))}
         </div>
-      ) : filteredTasks.length === 0 ? (
+      ) : totalVisible === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <CheckSquare className="h-12 w-12 text-muted-foreground mb-4" />
-          <h2 className="text-lg font-medium mb-1">
+          <CheckSquare className="h-10 w-10 text-muted-foreground/40 mb-4" />
+          <h2 className="text-base font-medium mb-1">
             {hasActiveFilters ? "No matching tasks" : "No tasks found"}
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground max-w-xs">
             {hasActiveFilters
               ? "Try adjusting your filters."
               : "Create tasks from any project's Kanban board or use New task."}
           </p>
         </div>
       ) : (
-        <div className="space-y-1">
-          {filteredTasks.map((task) => (
-            <Link
-              key={task.id}
-              href={`/projects/${task.project?.id}?task=${task.id}`}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg border bg-card shadow-xs",
-                "hover:border-primary/50 transition-colors",
-                task.status === "DONE" && "opacity-60"
-              )}
-            >
-              <div
-                className="w-1 h-5 rounded-full shrink-0"
-                style={{
-                  backgroundColor:
-                    task.status === "DONE"
-                      ? "#22c55e"
-                      : task.status === "IN_PROGRESS"
-                      ? "oklch(0.585 0.233 277)"
-                      : "var(--border)",
-                }}
-              />
-
-              <span
-                className={cn(
-                  "flex-1 text-sm font-medium truncate",
-                  task.status === "DONE" && "line-through text-muted-foreground"
-                )}
-              >
-                {task.title}
-              </span>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <PriorityBadge priority={task.priority} />
-                {task.deadline && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    {format(new Date(task.deadline), "MMM d")}
-                  </span>
-                )}
-                {task.project && (
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full hidden sm:inline"
-                    style={{
-                      backgroundColor: task.project.color + "20",
-                      color: task.project.color,
-                    }}
-                  >
-                    {task.project.name}
-                  </span>
-                )}
-              </div>
-            </Link>
+        <div className="space-y-3">
+          {STATUS_SECTIONS.map((section) => (
+            <StatusSection
+              key={section.value}
+              section={section}
+              tasks={tasksByStatus[section.value]}
+            />
           ))}
         </div>
       )}
