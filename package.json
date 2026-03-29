@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "node node_modules/next/dist/bin/next dev",
-    "build": "node node_modules/next/dist/bin/next build",
+    "build": "prisma generate && prisma db push && node node_modules/next/dist/bin/next build",
     "start": "node node_modules/next/dist/bin/next start",
+    "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
