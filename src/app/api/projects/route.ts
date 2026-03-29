@@ -12,7 +12,7 @@ const DEFAULT_COLUMNS = [
 
 export async function GET() {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const projects = await prisma.project.findMany({
     where: { workspaceId: session.user.workspaceId, archivedAt: null },
@@ -27,7 +27,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (!session.user.workspaceId) {
     return NextResponse.json({ error: "No workspace found for this user" }, { status: 400 });
@@ -53,7 +53,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(project, { status: 201 });
   } catch (err) {
-    console.error("[projects/POST]", err);
-    return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[projects/POST]", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
