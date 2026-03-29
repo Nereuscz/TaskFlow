@@ -14,7 +14,10 @@ async function createProject(data: { name: string; description?: string; color: 
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to create project");
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.error ?? "Failed to create project");
+  }
   return res.json();
 }
 
@@ -47,7 +50,7 @@ export function useProjects() {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Project created");
     },
-    onError: () => toast.error("Failed to create project"),
+    onError: (err: Error) => toast.error(err.message ?? "Failed to create project"),
   });
 
   const updateMutation = useMutation({

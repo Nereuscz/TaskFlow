@@ -29,22 +29,31 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  if (!session.user.workspaceId) {
+    return NextResponse.json({ error: "No workspace found for this user" }, { status: 400 });
+  }
+
   const body = await req.json();
   const parsed = createProjectSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
-  const project = await prisma.project.create({
-    data: {
-      ...parsed.data,
-      workspaceId: session.user.workspaceId,
-      columns: {
-        create: DEFAULT_COLUMNS,
+  try {
+    const project = await prisma.project.create({
+      data: {
+        ...parsed.data,
+        workspaceId: session.user.workspaceId,
+        columns: {
+          create: DEFAULT_COLUMNS,
+        },
       },
-    },
-    include: { columns: true },
-  });
+      include: { columns: true },
+    });
 
-  return NextResponse.json(project, { status: 201 });
+    return NextResponse.json(project, { status: 201 });
+  } catch (err) {
+    console.error("[projects/POST]", err);
+    return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
+  }
 }
