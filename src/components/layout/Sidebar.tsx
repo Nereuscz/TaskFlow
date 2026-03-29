@@ -36,12 +36,12 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col border-r bg-card transition-all duration-200",
+        "flex flex-col border-r border-border/60 bg-sidebar transition-all duration-200",
         collapsed ? "w-16" : "w-60"
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-4 border-b">
+      <div className="flex items-center justify-between px-3 py-4 border-b border-border/40">
         {!collapsed && (
           <div className="flex items-center gap-2 min-w-0">
             <div className="flex items-center justify-center h-6 w-6 rounded-md bg-primary shrink-0">
@@ -91,13 +91,16 @@ export function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors",
+                "relative flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors",
                 active
                   ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
                 collapsed && "justify-center"
               )}
             >
+              {active && !collapsed && (
+                <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-primary rounded-r-full" />
+              )}
               <Icon className="h-4 w-4 shrink-0" />
               {!collapsed && <span>{label}</span>}
             </Link>
@@ -118,7 +121,7 @@ export function Sidebar() {
         {!collapsed && (
           <div className="pt-4">
             <div className="flex items-center justify-between px-2 mb-1">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <span className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-widest">
                 Projects
               </span>
               <Button
@@ -136,12 +139,15 @@ export function Sidebar() {
                   key={project.id}
                   href={`/projects/${project.id}`}
                   className={cn(
-                    "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                    "relative flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors",
                     pathname.startsWith(`/projects/${project.id}`)
                       ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
                   )}
                 >
+                  {pathname.startsWith(`/projects/${project.id}`) && (
+                    <span className="absolute left-0 top-1 bottom-1 w-0.5 bg-primary rounded-r-full" />
+                  )}
                   <span
                     className="h-2.5 w-2.5 rounded-full shrink-0 ring-1 ring-border"
                     style={{ backgroundColor: project.color }}
@@ -155,7 +161,7 @@ export function Sidebar() {
       </nav>
 
       {/* Settings */}
-      <div className="px-2 pb-3 border-t pt-3">
+      <div className="px-2 pb-3 border-t border-border/40 pt-3">
         {collapsed ? (
           <Tooltip>
             <TooltipTrigger
@@ -163,10 +169,10 @@ export function Sidebar() {
                 <Link
                   href="/settings"
                   className={cn(
-                    "flex items-center justify-center gap-3 rounded-md px-2 py-2 text-sm transition-colors",
+                    "flex items-center justify-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors",
                     pathname.startsWith("/settings")
                       ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
                   )}
                 >
                   <Settings className="h-4 w-4 shrink-0" />
@@ -179,10 +185,10 @@ export function Sidebar() {
           <Link
             href="/settings"
             className={cn(
-              "flex items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors",
+              "relative flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition-colors",
               pathname.startsWith("/settings")
                 ? "bg-primary/10 text-primary font-medium"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
             )}
           >
             <Settings className="h-4 w-4 shrink-0" />

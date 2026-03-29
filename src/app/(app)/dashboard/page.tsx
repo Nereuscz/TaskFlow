@@ -120,52 +120,40 @@ export default function DashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <div className="border rounded-xl p-4 bg-card">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
-              <CheckSquare className="h-4 w-4 text-primary" />
+        {[
+          { icon: CheckSquare, label: "Open tasks", value: tasksLoading ? null : activeTasks.length },
+          { icon: FolderOpen, label: "Projects", value: projectsLoading ? null : (projects?.length ?? 0) },
+          { icon: Sparkles, label: "Done today", value: tasksLoading ? null : completedToday, colSpan: true },
+        ].map(({ icon: Icon, label, value, colSpan }) => (
+          <div
+            key={label}
+            className={cn(
+              "relative border rounded-xl p-4 bg-card shadow-xs overflow-hidden",
+              colSpan && "col-span-2 sm:col-span-1"
+            )}
+          >
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/25 rounded-t-xl" />
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
+                <Icon className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-xs text-muted-foreground">{label}</span>
             </div>
-            <span className="text-xs text-muted-foreground">Open tasks</span>
+            {value === null ? (
+              <Skeleton className="h-7 w-10" />
+            ) : (
+              <p className="text-2xl font-semibold tracking-tight">{value}</p>
+            )}
           </div>
-          {tasksLoading ? (
-            <Skeleton className="h-7 w-10" />
-          ) : (
-            <p className="text-2xl font-semibold">{activeTasks.length}</p>
-          )}
-        </div>
-        <div className="border rounded-xl p-4 bg-card">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
-              <FolderOpen className="h-4 w-4 text-primary" />
-            </div>
-            <span className="text-xs text-muted-foreground">Projects</span>
-          </div>
-          {projectsLoading ? (
-            <Skeleton className="h-7 w-10" />
-          ) : (
-            <p className="text-2xl font-semibold">{projects?.length ?? 0}</p>
-          )}
-        </div>
-        <div className="border rounded-xl p-4 bg-card col-span-2 sm:col-span-1">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
-              <Sparkles className="h-4 w-4 text-primary" />
-            </div>
-            <span className="text-xs text-muted-foreground">Done today</span>
-          </div>
-          {tasksLoading ? (
-            <Skeleton className="h-7 w-10" />
-          ) : (
-            <p className="text-2xl font-semibold">{completedToday}</p>
-          )}
-        </div>
+        ))}
       </div>
 
       {/* Today */}
       <div>
-        <h2 className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wide">
-          Today
-        </h2>
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-0.5 h-4 bg-primary rounded-full" />
+          <h2 className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Today</h2>
+        </div>
         {tasksLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -189,9 +177,10 @@ export default function DashboardPage() {
       {/* Upcoming tasks */}
       {upcoming.length > 0 && (
         <div>
-          <h2 className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wide">
-            Upcoming
-          </h2>
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-0.5 h-4 bg-primary/50 rounded-full" />
+            <h2 className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Upcoming</h2>
+          </div>
           <div className="space-y-2">
             {upcoming.map((task) => (
               <TaskRow key={task.id} task={task} />
@@ -202,9 +191,10 @@ export default function DashboardPage() {
 
       {/* Projects */}
       <div>
-        <h2 className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wide">
-          Your projects
-        </h2>
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-0.5 h-4 bg-primary/30 rounded-full" />
+          <h2 className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Your projects</h2>
+        </div>
         {projectsLoading ? (
           <div className="grid grid-cols-2 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -217,13 +207,15 @@ export default function DashboardPage() {
               <Link
                 key={p.id}
                 href={`/projects/${p.id}`}
-                className="flex items-center gap-3 p-3 border rounded-xl bg-card hover:border-primary/50 transition-colors"
+                className="flex items-center gap-0 border rounded-xl bg-card shadow-xs hover:shadow-sm hover:border-primary/40 transition-all overflow-hidden"
               >
                 <div
-                  className="h-3 w-3 rounded-full shrink-0"
+                  className="w-1 self-stretch shrink-0"
                   style={{ backgroundColor: p.color }}
                 />
-                <span className="text-sm font-medium truncate">{p.name}</span>
+                <div className="flex items-center gap-2.5 px-3 py-3 min-w-0">
+                  <span className="text-sm font-medium truncate">{p.name}</span>
+                </div>
               </Link>
             ))}
           </div>

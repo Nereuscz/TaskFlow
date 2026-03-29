@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -16,9 +16,19 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Plus, Settings, User } from "lucide-react";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 
+const PAGE_TITLES: { prefix: string; label: string }[] = [
+  { prefix: "/dashboard", label: "Dashboard" },
+  { prefix: "/today", label: "Today" },
+  { prefix: "/projects", label: "Projects" },
+  { prefix: "/tasks", label: "My Tasks" },
+  { prefix: "/timer", label: "Timer" },
+  { prefix: "/settings", label: "Settings" },
+];
+
 export function Header() {
   const { data: session } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const [createOpen, setCreateOpen] = useState(false);
   const user = session?.user;
 
@@ -26,18 +36,29 @@ export function Header() {
     ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
+  const pageTitle =
+    PAGE_TITLES.find((p) => pathname.startsWith(p.prefix))?.label ?? "TaskFlow";
+
   return (
-    <header className="h-14 border-b flex items-center justify-between px-4 bg-background">
+    <header className="h-16 border-b border-border/60 flex items-center justify-between px-4 bg-background">
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm font-semibold">{pageTitle}</span>
+        {user?.workspaceName && (
+          <span className="text-muted-foreground/50 text-sm hidden sm:inline">·</span>
+        )}
+        <span className="text-sm text-muted-foreground hidden sm:inline">
           {user?.workspaceName}
         </span>
       </div>
 
       <div className="flex items-center gap-3">
-        <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1.5">
+        <Button
+          size="sm"
+          onClick={() => setCreateOpen(true)}
+          className="gap-1.5 shadow-sm font-medium"
+        >
           <Plus className="h-4 w-4" />
-          New task
+          <span className="hidden sm:inline">New task</span>
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">

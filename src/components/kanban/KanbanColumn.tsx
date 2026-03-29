@@ -65,7 +65,7 @@ export function KanbanColumn({
   return (
     <div className="flex flex-col w-72 shrink-0">
       {/* Column header */}
-      <div className="flex items-center justify-between mb-2 px-1">
+      <div className="flex items-center justify-between mb-3 px-1">
         {renaming ? (
           <Input
             autoFocus
@@ -76,21 +76,21 @@ export function KanbanColumn({
               if (e.key === "Enter") handleRename();
               if (e.key === "Escape") { setColumnName(column.name); setRenaming(false); }
             }}
-            className="h-6 text-sm font-medium px-1 py-0"
+            className="h-6 text-sm font-semibold px-1 py-0"
           />
         ) : (
           <button
             onDoubleClick={() => setRenaming(true)}
-            className="text-sm font-medium text-foreground hover:text-foreground/80 flex items-center gap-2"
+            className="text-sm font-semibold tracking-tight text-foreground hover:text-foreground/80 flex items-center gap-2"
           >
             {column.name}
-            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-muted text-muted-foreground text-xs font-normal">
+            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
               {column.tasks.length}
             </span>
           </button>
         )}
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
           <Button
             variant="ghost"
             size="icon"
@@ -128,8 +128,8 @@ export function KanbanColumn({
       <div
         ref={setNodeRef}
         className={cn(
-          "flex-1 min-h-12 rounded-xl p-1.5 space-y-2 transition-colors bg-muted/40",
-          isOver && "bg-primary/8 ring-1 ring-primary/25"
+          "flex-1 min-h-[120px] rounded-xl p-2 space-y-2 transition-all bg-muted/30",
+          isOver && "bg-primary/6 ring-2 ring-inset ring-primary/20"
         )}
       >
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
