@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PriorityBadge } from "@/components/tasks/PriorityBadge";
+import { BulkActionBar } from "@/components/project/BulkActionBar";
 import { cn } from "@/lib/utils";
 import { format, isPast } from "date-fns";
 import {
@@ -15,6 +16,7 @@ import {
   ChevronRight,
   Plus,
   Tag,
+  RotateCcw,
 } from "lucide-react";
 
 const PRIORITY_DOT: Record<string, string> = {
@@ -31,7 +33,15 @@ interface ListViewProps {
   isCreating?: boolean;
 }
 
-function TaskRow({ task }: { task: TaskWithRelations }) {
+function TaskRow({
+  task,
+  selected,
+  onToggleSelect,
+}: {
+  task: TaskWithRelations;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -46,11 +56,24 @@ function TaskRow({ task }: { task: TaskWithRelations }) {
 
   return (
     <div
-      onClick={openDetail}
-      className="group flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 cursor-pointer transition-colors border-t border-border/30 first:border-t-0"
+      className={cn(
+        "group flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 cursor-pointer transition-colors border-t border-border/30 first:border-t-0",
+        selected && "bg-primary/5"
+      )}
     >
+      {/* Checkbox */}
+      <input
+        type="checkbox"
+        checked={selected}
+        onChange={(e) => { e.stopPropagation(); onToggleSelect(task.id); }}
+        onClick={(e) => e.stopPropagation()}
+        className="h-3.5 w-3.5 rounded accent-primary flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+        style={{ opacity: selected ? 1 : undefined }}
+      />
+
       {/* Priority dot */}
       <div
+        onClick={openDetail}
         className={cn(
           "h-2.5 w-2.5 rounded-full flex-shrink-0",
           PRIORITY_DOT[task.priority] ?? "bg-muted-foreground/30"
@@ -59,8 +82,9 @@ function TaskRow({ task }: { task: TaskWithRelations }) {
 
       {/* Title */}
       <span
+        onClick={openDetail}
         className={cn(
-          "flex-1 text-sm truncate",
+          "flex-1 text-sm truncate cursor-pointer",
           task.status === "DONE" && "line-through text-muted-foreground"
         )}
       >
@@ -107,6 +131,11 @@ function TaskRow({ task }: { task: TaskWithRelations }) {
         <span className="hidden sm:block w-16 flex-shrink-0" />
       )}
 
+      {/* Recurrence icon */}
+      {(task as { recurrence?: string }).recurrence && (task as { recurrence?: string }).recurrence !== "NONE" && (
+        <RotateCcw className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" aria-label="Recurring task" />
+      )}
+
       {/* Assignee */}
       {task.assignee ? (
         <Avatar className="h-6 w-6 flex-shrink-0">
@@ -127,15 +156,21 @@ function ColumnSection({
   projectId,
   onCreateTask,
   isCreating,
+  selectedIds,
+  onToggleSelect,
 }: {
   column: ProjectBoard["columns"][0];
   projectId: string;
   onCreateTask: (data: { columnId: string; title: string; projectId: string }) => void;
   isCreating?: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
   const [addingTask, setAddingTask] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+
+  const allSelected = column.tasks.length > 0 && column.tasks.every((t) => selectedIds.has(t.id));
 
   function handleAdd() {
     const title = newTitle.trim();
@@ -145,10 +180,16 @@ function ColumnSection({
     setAddingTask(false);
   }
 
+  function toggleAll() {
+    if (allSelected) column.tasks.forEach((t) => { if (selectedIds.has(t.id)) onToggleSelect(t.id); });
+    else column.tasks.forEach((t) => { if (!selectedIds.has(t.id)) onToggleSelect(t.id); });
+  }
+
   return (
     <div className="border border-border/60 rounded-xl bg-card shadow-sm overflow-hidden">
       {/* Section header */}
       <div className="flex items-center gap-2 px-4 py-2.5 bg-muted/20 border-b border-border/40">
+        <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-3.5 w-3.5 rounded accent-primary flex-shrink-0 cursor-pointer" />
         <button
           onClick={() => setExpanded((v) => !v)}
           className="flex items-center gap-2 flex-1 min-w-0 text-left"
@@ -176,7 +217,12 @@ function ColumnSection({
       {expanded && (
         <>
           {column.tasks.map((task) => (
-            <TaskRow key={task.id} task={task} />
+            <TaskRow
+              key={task.id}
+              task={task}
+              selected={selectedIds.has(task.id)}
+              onToggleSelect={onToggleSelect}
+            />
           ))}
 
           {column.tasks.length === 0 && !addingTask && (
@@ -228,10 +274,22 @@ function ColumnSection({
 }
 
 export function ListView({ board, onCreateTask, isCreating }: ListViewProps) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   return (
     <div className="space-y-3 pb-6">
       {/* Column header row */}
       <div className="hidden sm:flex items-center gap-3 px-4 pb-1 text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider">
+        <div className="w-3.5 flex-shrink-0" />
         <div className="w-2.5 flex-shrink-0" />
         <span className="flex-1">Title</span>
         <span className="hidden md:block w-20 text-right">Priority</span>
@@ -246,8 +304,16 @@ export function ListView({ board, onCreateTask, isCreating }: ListViewProps) {
           projectId={board.id}
           onCreateTask={onCreateTask}
           isCreating={isCreating}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
         />
       ))}
+
+      <BulkActionBar
+        selectedIds={selectedIds}
+        projectId={board.id}
+        onClear={() => setSelectedIds(new Set())}
+      />
     </div>
   );
 }

@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { PriorityBadge } from "@/components/tasks/PriorityBadge";
 import { cn } from "@/lib/utils";
 import { format, isPast } from "date-fns";
-import { Calendar, Plus } from "lucide-react";
+import { Calendar, Plus, RotateCcw } from "lucide-react";
+import { BulkActionBar } from "@/components/project/BulkActionBar";
 
 const STATUS_COLORS: Record<string, string> = {
   TODO: "text-stone-500",
@@ -31,7 +32,15 @@ interface FlatTask {
   columnId: string;
 }
 
-function TableRow({ item }: { item: FlatTask }) {
+function TableRow({
+  item,
+  selected,
+  onToggleSelect,
+}: {
+  item: FlatTask;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { task } = item;
@@ -47,19 +56,38 @@ function TableRow({ item }: { item: FlatTask }) {
 
   return (
     <tr
-      onClick={openDetail}
-      className="group cursor-pointer hover:bg-muted/30 transition-colors border-t border-border/30"
+      className={cn(
+        "group cursor-pointer hover:bg-muted/30 transition-colors border-t border-border/30",
+        selected && "bg-primary/5"
+      )}
     >
+      {/* Checkbox */}
+      <td className="py-2.5 pl-3 pr-0 w-8">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={(e) => { e.stopPropagation(); onToggleSelect(task.id); }}
+          onClick={(e) => e.stopPropagation()}
+          className="h-3.5 w-3.5 rounded accent-primary cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ opacity: selected ? 1 : undefined }}
+        />
+      </td>
+
       {/* Title */}
-      <td className="py-2.5 pl-4 pr-3">
-        <span
-          className={cn(
-            "text-sm font-medium group-hover:text-primary transition-colors",
-            task.status === "DONE" && "line-through text-muted-foreground"
+      <td className="py-2.5 pl-2 pr-3" onClick={openDetail}>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={cn(
+              "text-sm font-medium group-hover:text-primary transition-colors",
+              task.status === "DONE" && "line-through text-muted-foreground"
+            )}
+          >
+            {task.title}
+          </span>
+          {(task as { recurrence?: string }).recurrence && (task as { recurrence?: string }).recurrence !== "NONE" && (
+            <RotateCcw className="h-3 w-3 text-muted-foreground flex-shrink-0" aria-label="Recurring task" />
           )}
-        >
-          {task.title}
-        </span>
+        </div>
         {task.tags.length > 0 && (
           <div className="flex items-center gap-1 mt-0.5">
             {task.tags.slice(0, 3).map(({ tag }) => (
@@ -74,6 +102,7 @@ function TableRow({ item }: { item: FlatTask }) {
           </div>
         )}
       </td>
+
 
       {/* Column */}
       <td className="py-2.5 px-3 hidden sm:table-cell">
@@ -134,6 +163,7 @@ function TableRow({ item }: { item: FlatTask }) {
 export function TableView({ board, onCreateTask, isCreating }: TableViewProps) {
   const [addingInColumn, setAddingInColumn] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const allTasks: FlatTask[] = board.columns.flatMap((col) =>
     col.tasks.map((task) => ({
@@ -142,6 +172,22 @@ export function TableView({ board, onCreateTask, isCreating }: TableViewProps) {
       columnId: col.id,
     }))
   );
+
+  const allSelected = allTasks.length > 0 && allTasks.every((t) => selectedIds.has(t.task.id));
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(allTasks.map((t) => t.task.id)));
+  }
 
   function handleAdd(columnId: string) {
     const title = newTitle.trim();
@@ -157,7 +203,10 @@ export function TableView({ board, onCreateTask, isCreating }: TableViewProps) {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted/20 border-b border-border/40">
-              <th className="py-2.5 pl-4 pr-3 text-left text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider">
+              <th className="py-2.5 pl-3 pr-0 w-8">
+                <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-3.5 w-3.5 rounded accent-primary cursor-pointer" />
+              </th>
+              <th className="py-2.5 pl-2 pr-3 text-left text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider">
                 Title
               </th>
               <th className="py-2.5 px-3 text-left text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider hidden sm:table-cell">
@@ -176,7 +225,12 @@ export function TableView({ board, onCreateTask, isCreating }: TableViewProps) {
           </thead>
           <tbody>
             {allTasks.map((item) => (
-              <TableRow key={item.task.id} item={item} />
+              <TableRow
+                key={item.task.id}
+                item={item}
+                selected={selectedIds.has(item.task.id)}
+                onToggleSelect={toggleSelect}
+              />
             ))}
 
             {allTasks.length === 0 && (
@@ -246,6 +300,12 @@ export function TableView({ board, onCreateTask, isCreating }: TableViewProps) {
           )}
         </div>
       )}
+
+      <BulkActionBar
+        selectedIds={selectedIds}
+        projectId={board.id}
+        onClear={() => setSelectedIds(new Set())}
+      />
     </div>
   );
 }

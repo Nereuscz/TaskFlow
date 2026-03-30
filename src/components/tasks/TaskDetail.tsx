@@ -39,6 +39,9 @@ import {
   Loader2,
   MessageSquare,
   Send,
+  Activity,
+  RotateCcw,
+  ChevronDown,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -378,6 +381,104 @@ function TagPicker({
 }
 
 // ─── Attachments section ──────────────────────────────────────────────────────
+
+// ─── Activity log ─────────────────────────────────────────────────────────────
+
+const ACTION_LABELS: Record<string, string> = {
+  status: "status", priority: "priority", assignee: "assignee",
+  deadline: "deadline", column: "column",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  TODO: "To Do", IN_PROGRESS: "In Progress", IN_REVIEW: "In Review",
+  DONE: "Done", CANCELLED: "Cancelled",
+};
+
+const PRIORITY_LABELS: Record<string, string> = {
+  NONE: "None", LOW: "Low", MEDIUM: "Medium", HIGH: "High", URGENT: "Urgent",
+};
+
+function humanizeValue(action: string, raw: string | null): string {
+  if (!raw) return "—";
+  if (action === "status") return STATUS_LABELS[raw] ?? raw;
+  if (action === "priority") return PRIORITY_LABELS[raw] ?? raw;
+  if (action === "deadline") {
+    try { return format(new Date(raw), "MMM d, yyyy"); } catch { return raw; }
+  }
+  return raw;
+}
+
+type ActivityLogType = {
+  id: string;
+  action: string;
+  oldValue: string | null;
+  newValue: string | null;
+  createdAt: string;
+  user: { id: string; name: string | null; image: string | null };
+};
+
+function ActivitySection({ logs }: { logs: ActivityLogType[] }) {
+  const [expanded, setExpanded] = useState(false);
+  if (logs.length === 0) return null;
+
+  const visible = expanded ? logs : logs.slice(-5);
+  const hasMore = logs.length > 5;
+
+  function initials(name: string | null) {
+    if (!name) return "?";
+    return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <Activity className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Activity</span>
+        <span className="text-xs text-muted-foreground">({logs.length})</span>
+      </div>
+      <div className="space-y-2">
+        {hasMore && !expanded && (
+          <button
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+            onClick={() => setExpanded(true)}
+          >
+            <ChevronDown className="h-3 w-3" />Show all {logs.length} events
+          </button>
+        )}
+        {visible.map((log) => (
+          <div key={log.id} className="flex items-start gap-2">
+            <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-semibold text-muted-foreground flex-shrink-0 mt-0.5 overflow-hidden">
+              {log.user.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={log.user.image} alt="" className="h-full w-full object-cover" />
+              ) : initials(log.user.name)}
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <span className="font-medium text-foreground/80">{log.user.name ?? "Someone"}</span>
+              {" changed "}
+              <span className="font-medium text-foreground/80">{ACTION_LABELS[log.action] ?? log.action}</span>
+              {log.oldValue !== null && (
+                <> from <span className="line-through">{humanizeValue(log.action, log.oldValue)}</span></>
+              )}
+              {log.newValue !== null && (
+                <> to <span className="font-medium text-foreground/80">{humanizeValue(log.action, log.newValue)}</span></>
+              )}
+              <span className="ml-1.5 opacity-50">{formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}</span>
+            </p>
+          </div>
+        ))}
+        {hasMore && expanded && (
+          <button
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => setExpanded(false)}
+          >
+            Show less
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── Comments ─────────────────────────────────────────────────────────────────
 
@@ -946,6 +1047,14 @@ export function TaskDetail({ projectId }: { projectId?: string }) {
                   {/* Comments */}
                   <Separator />
                   <CommentsSection taskId={task.id} />
+
+                  {/* Activity */}
+                  {task.activityLogs?.length > 0 && (
+                    <>
+                      <Separator />
+                      <ActivitySection logs={task.activityLogs} />
+                    </>
+                  )}
                 </div>
 
                 {/* ── Sidebar ── */}
@@ -990,6 +1099,37 @@ export function TaskDetail({ projectId }: { projectId?: string }) {
                           className="w-full text-xs rounded-md border border-border/60 bg-background px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50"
                         />
                       </PropRow>
+
+                      <PropRow label="Repeat">
+                        <select
+                          value={task.recurrence ?? "NONE"}
+                          onChange={(e) => updateMutation.mutate({ recurrence: e.target.value as never })}
+                          className="w-full text-xs rounded-md border border-border/60 bg-background px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        >
+                          <option value="NONE">None</option>
+                          <option value="DAILY">Daily</option>
+                          <option value="WEEKLY">Weekly</option>
+                          <option value="BIWEEKLY">Bi-weekly</option>
+                          <option value="MONTHLY">Monthly</option>
+                        </select>
+                      </PropRow>
+
+                      {task.recurrence && task.recurrence !== "NONE" && (
+                        <PropRow label="Ends">
+                          <input
+                            type="date"
+                            value={task.recurrenceEndDate ? format(new Date(task.recurrenceEndDate), "yyyy-MM-dd") : ""}
+                            onChange={(e) =>
+                              updateMutation.mutate({
+                                recurrenceEndDate: e.target.value
+                                  ? new Date(e.target.value).toISOString()
+                                  : null,
+                              })
+                            }
+                            className="w-full text-xs rounded-md border border-border/60 bg-background px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                          />
+                        </PropRow>
+                      )}
 
                       {task.assignee && (
                         <PropRow label="Assignee">

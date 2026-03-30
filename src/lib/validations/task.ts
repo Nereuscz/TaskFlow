@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TaskPriority, TaskStatus } from "@prisma/client";
+import { TaskPriority, TaskStatus, RecurrenceType } from "@prisma/client";
 
 export const createTaskSchema = z.object({
   title: z.string().min(1, "Title is required").max(255),
@@ -23,6 +23,8 @@ export const updateTaskSchema = z.object({
   assigneeId: z.string().cuid().optional().nullable(),
   order: z.number().int().optional(),
   tagIds: z.array(z.string().cuid()).optional(),
+  recurrence: z.nativeEnum(RecurrenceType).optional(),
+  recurrenceEndDate: z.string().datetime().optional().nullable(),
 });
 
 export const reorderTaskSchema = z.object({

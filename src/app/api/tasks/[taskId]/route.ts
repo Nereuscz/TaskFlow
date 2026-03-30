@@ -2,11 +2,46 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { updateTaskSchema } from "@/lib/validations/task";
+import { addDays, addWeeks, addMonths } from "date-fns";
 
 async function getTaskOrFail(taskId: string, workspaceId: string) {
   return prisma.task.findFirst({
     where: { id: taskId, project: { workspaceId } },
   });
+}
+
+// Fields we track in activity log
+const TRACKED_FIELDS = ["status", "priority", "assigneeId", "deadline", "columnId"] as const;
+type TrackedField = (typeof TRACKED_FIELDS)[number];
+
+function fieldLabel(field: TrackedField): string {
+  const labels: Record<TrackedField, string> = {
+    status: "status",
+    priority: "priority",
+    assigneeId: "assignee",
+    deadline: "deadline",
+    columnId: "column",
+  };
+  return labels[field];
+}
+
+function formatValue(field: TrackedField, value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (field === "deadline" && value instanceof Date) return value.toISOString();
+  return String(value);
+}
+
+function nextRecurrenceDeadline(
+  deadline: Date,
+  recurrence: string
+): Date {
+  switch (recurrence) {
+    case "DAILY": return addDays(deadline, 1);
+    case "WEEKLY": return addWeeks(deadline, 1);
+    case "BIWEEKLY": return addWeeks(deadline, 2);
+    case "MONTHLY": return addMonths(deadline, 1);
+    default: return deadline;
+  }
 }
 
 export async function GET(
@@ -41,6 +76,10 @@ export async function GET(
       project: { select: { id: true, name: true, color: true } },
       column: { select: { id: true, name: true } },
       attachments: { orderBy: { createdAt: "asc" } },
+      activityLogs: {
+        orderBy: { createdAt: "asc" },
+        include: { user: { select: { id: true, name: true, image: true } } },
+      },
     },
   });
 
@@ -65,6 +104,7 @@ export async function PATCH(
   }
 
   const { tagIds, ...updateData } = parsed.data;
+  const userId = session.user.id;
 
   const updated = await prisma.$transaction(async (tx) => {
     // Handle tag updates if provided
@@ -77,7 +117,7 @@ export async function PATCH(
       }
     }
 
-    return tx.task.update({
+    const updatedTask = await tx.task.update({
       where: { id: taskId },
       data: {
         ...updateData,
@@ -97,6 +137,70 @@ export async function PATCH(
         _count: { select: { subtasks: true, checklist: true, timeEntries: true } },
       },
     });
+
+    // Record activity log for changed tracked fields
+    const activityEntries: {
+      taskId: string;
+      userId: string;
+      action: string;
+      oldValue: string | null;
+      newValue: string | null;
+    }[] = [];
+
+    for (const field of TRACKED_FIELDS) {
+      if (!(field in updateData)) continue;
+      const oldRaw = task[field as keyof typeof task];
+      const newRaw = (updateData as Record<string, unknown>)[field];
+      const oldVal = formatValue(field, oldRaw);
+      const newVal = formatValue(field, newRaw);
+      if (oldVal !== newVal) {
+        activityEntries.push({
+          taskId,
+          userId,
+          action: fieldLabel(field),
+          oldValue: oldVal,
+          newValue: newVal,
+        });
+      }
+    }
+
+    if (activityEntries.length > 0) {
+      await tx.activityLog.createMany({ data: activityEntries });
+    }
+
+    // Auto-create next occurrence if recurring task marked DONE
+    if (
+      updateData.status === "DONE" &&
+      task.status !== "DONE" &&
+      task.recurrence !== "NONE" &&
+      task.deadline
+    ) {
+      const nextDeadline = nextRecurrenceDeadline(task.deadline, task.recurrence);
+      if (!task.recurrenceEndDate || nextDeadline <= task.recurrenceEndDate) {
+        const maxOrder = await tx.task.aggregate({
+          where: { columnId: task.columnId, archivedAt: null },
+          _max: { order: true },
+        });
+        await tx.task.create({
+          data: {
+            projectId: task.projectId,
+            columnId: task.columnId,
+            title: task.title,
+            description: task.description,
+            status: "TODO",
+            priority: task.priority,
+            order: (maxOrder._max.order ?? 0) + 1000,
+            deadline: nextDeadline,
+            assigneeId: task.assigneeId,
+            createdById: task.createdById,
+            recurrence: task.recurrence,
+            recurrenceEndDate: task.recurrenceEndDate,
+          },
+        });
+      }
+    }
+
+    return updatedTask;
   });
 
   return NextResponse.json(updated);

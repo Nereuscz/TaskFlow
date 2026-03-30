@@ -7,7 +7,7 @@ import type { TaskWithRelations } from "@/hooks/useTasks";
 import { PriorityBadge } from "@/components/tasks/PriorityBadge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CheckSquare, Clock } from "lucide-react";
+import { Calendar, CheckSquare, Clock, RotateCcw } from "lucide-react";
 import { format, isPast } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -118,6 +118,9 @@ export function TaskCard({ task, isDragOverlay = false }: TaskCardProps) {
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
               </span>
+            )}
+            {(task as { recurrence?: string }).recurrence && (task as { recurrence?: string }).recurrence !== "NONE" && (
+              <RotateCcw className="h-3 w-3 text-muted-foreground" aria-label="Recurring task" />
             )}
             {task.assignee && (
               <Avatar className="h-5 w-5">
