@@ -14,6 +14,9 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)));
   const search = searchParams.get("search");
+  const deadlineFrom = searchParams.get("deadlineFrom");
+  const deadlineTo = searchParams.get("deadlineTo");
+  const hasDeadline = searchParams.get("hasDeadline");
 
   const where = {
     project: { workspaceId: session.user.workspaceId },
@@ -23,6 +26,13 @@ export async function GET(req: NextRequest) {
     ...(assigneeId ? { assigneeId } : {}),
     ...(status ? { status: status as never } : {}),
     ...(search ? { title: { contains: search, mode: "insensitive" as const } } : {}),
+    ...(hasDeadline === "true" ? { deadline: { not: null } } : {}),
+    ...((deadlineFrom || deadlineTo) ? {
+      deadline: {
+        ...(deadlineFrom ? { gte: new Date(deadlineFrom) } : {}),
+        ...(deadlineTo ? { lte: new Date(deadlineTo) } : {}),
+      },
+    } : {}),
   };
 
   const [tasks, total] = await Promise.all([

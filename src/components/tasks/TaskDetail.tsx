@@ -37,10 +37,13 @@ import {
   FileImage,
   FileCode,
   Loader2,
+  MessageSquare,
+  Send,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
+import { useSession } from "next-auth/react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -375,6 +378,164 @@ function TagPicker({
 }
 
 // ─── Attachments section ──────────────────────────────────────────────────────
+
+// ─── Comments ─────────────────────────────────────────────────────────────────
+
+type CommentType = {
+  id: string;
+  content: string;
+  createdAt: string;
+  author: { id: string; name: string | null; image: string | null };
+};
+
+function CommentsSection({ taskId }: { taskId: string }) {
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+  const [draft, setDraft] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { data: comments = [], isLoading } = useQuery<CommentType[]>({
+    queryKey: ["comments", taskId],
+    queryFn: () => fetch(`/api/tasks/${taskId}/comments`).then((r) => r.json()),
+    staleTime: 30_000,
+  });
+
+  const submitComment = useCallback(async () => {
+    const content = draft.trim();
+    if (!content) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setDraft("");
+      queryClient.invalidateQueries({ queryKey: ["comments", taskId] });
+    } catch {
+      toast.error("Failed to post comment");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [draft, taskId, queryClient]);
+
+  async function deleteComment() {
+    if (!deleteId) return;
+    setDeletePending(true);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/comments/${deleteId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed");
+      queryClient.invalidateQueries({ queryKey: ["comments", taskId] });
+    } catch {
+      toast.error("Failed to delete comment");
+    } finally {
+      setDeletePending(false);
+      setDeleteId(null);
+    }
+  }
+
+  function initials(name: string | null) {
+    if (!name) return "?";
+    return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 mb-3">
+        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">
+          Discussion{comments.length > 0 && <span className="text-muted-foreground ml-1">({comments.length})</span>}
+        </span>
+      </div>
+
+      {/* Comment list */}
+      {isLoading ? (
+        <div className="space-y-3">
+          {[0, 1].map((i) => <div key={i} className="flex gap-2.5"><div className="h-7 w-7 rounded-full bg-muted animate-pulse flex-shrink-0" /><div className="flex-1 h-12 bg-muted/50 rounded-lg animate-pulse" /></div>)}
+        </div>
+      ) : comments.length > 0 ? (
+        <div className="space-y-3 mb-3">
+          {comments.map((c) => (
+            <div key={c.id} className="group flex gap-2.5">
+              <div className="flex-shrink-0">
+                <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-semibold text-primary overflow-hidden">
+                  {c.author.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.author.image} alt={c.author.name ?? ""} className="h-full w-full object-cover" />
+                  ) : (
+                    initials(c.author.name)
+                  )}
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-semibold">{c.author.name ?? "Unknown"}</span>
+                  <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(c.createdAt), { addSuffix: true })}</span>
+                  {(c.author.id === session?.user?.id) && (
+                    <button
+                      className="opacity-0 group-hover:opacity-100 ml-auto text-[10px] text-muted-foreground hover:text-destructive transition-opacity"
+                      onClick={() => setDeleteId(c.id)}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+                <p className="text-sm text-foreground/90 mt-0.5 leading-relaxed whitespace-pre-wrap break-words">{c.content}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground mb-3">No comments yet. Be the first to add one.</p>
+      )}
+
+      {/* New comment input */}
+      <div className="flex gap-2 items-start">
+        <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-semibold text-primary flex-shrink-0 mt-0.5">
+          {session?.user?.name ? initials(session.user.name) : "?"}
+        </div>
+        <div className="flex-1 relative">
+          <textarea
+            ref={textareaRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                e.preventDefault();
+                submitComment();
+              }
+            }}
+            placeholder="Add a comment… (⌘+Enter to send)"
+            rows={2}
+            className="w-full resize-none text-sm rounded-xl border border-border/60 bg-background px-3 py-2 pr-9 focus:outline-none focus:ring-2 focus:ring-ring/30 placeholder:text-muted-foreground/50"
+          />
+          <button
+            onClick={submitComment}
+            disabled={!draft.trim() || submitting}
+            className="absolute right-2 bottom-2 p-1 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 disabled:opacity-30 transition-colors"
+          >
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+
+      <AlertDialog
+        open={!!deleteId}
+        onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+        title="Delete comment"
+        description="This comment will be permanently deleted."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={deleteComment}
+        loading={deletePending}
+      />
+    </div>
+  );
+}
 
 function AttachmentsSection({
   attachments,
@@ -781,6 +942,10 @@ export function TaskDetail({ projectId }: { projectId?: string }) {
                       </div>
                     </>
                   )}
+
+                  {/* Comments */}
+                  <Separator />
+                  <CommentsSection taskId={task.id} />
                 </div>
 
                 {/* ── Sidebar ── */}

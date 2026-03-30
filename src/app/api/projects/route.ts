@@ -14,16 +14,33 @@ export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const projects = await prisma.project.findMany({
-    where: { workspaceId: session.user.workspaceId, archivedAt: null },
-    orderBy: { createdAt: "asc" },
-    include: {
-      _count: { select: { tasks: { where: { archivedAt: null } } } },
-      tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
-    },
-  });
+  const [projects, doneCounts] = await Promise.all([
+    prisma.project.findMany({
+      where: { workspaceId: session.user.workspaceId, archivedAt: null },
+      orderBy: { createdAt: "asc" },
+      include: {
+        _count: { select: { tasks: { where: { archivedAt: null } } } },
+        tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
+      },
+    }),
+    prisma.task.groupBy({
+      by: ["projectId"],
+      where: {
+        project: { workspaceId: session.user.workspaceId },
+        archivedAt: null,
+        status: "DONE",
+      },
+      _count: true,
+    }),
+  ]);
 
-  return NextResponse.json(projects);
+  const doneCountMap = Object.fromEntries(doneCounts.map((r) => [r.projectId, r._count]));
+  const result = projects.map((p) => ({
+    ...p,
+    doneCount: doneCountMap[p.id] ?? 0,
+  }));
+
+  return NextResponse.json(result);
 }
 
 export async function POST(req: NextRequest) {

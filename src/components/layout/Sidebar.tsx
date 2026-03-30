@@ -14,6 +14,7 @@ import {
   PanelLeftOpen,
   Sun,
   Leaf,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/today", icon: Sun, label: "Today" },
   { href: "/projects", icon: FolderOpen, label: "Projects" },
   { href: "/tasks", icon: CheckSquare, label: "My Tasks" },
+  { href: "/calendar", icon: CalendarDays, label: "Calendar" },
   { href: "/timer", icon: Timer, label: "Timer" },
 ];
 

@@ -13,8 +13,9 @@ import {
   ArrowRight,
   Layers,
   TrendingUp,
+  AlertTriangle,
 } from "lucide-react";
-import { format, isToday, isTomorrow } from "date-fns";
+import { format, isToday, isTomorrow, isPast, startOfWeek } from "date-fns";
 import { TaskDetail } from "@/components/tasks/TaskDetail";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -167,10 +168,15 @@ export default function DashboardPage() {
     .filter((t) => t.deadline && !isToday(new Date(t.deadline)))
     .slice(0, 5);
 
-  const completedToday =
+  const completedThisWeek =
     myTasks?.filter(
-      (t: TaskItem) => t.completedAt && isToday(new Date(t.completedAt))
+      (t: TaskItem) =>
+        t.completedAt && new Date(t.completedAt) >= startOfWeek(new Date(), { weekStartsOn: 1 })
     ).length ?? 0;
+
+  const overdueTasks = activeTasks.filter(
+    (t) => t.deadline && isPast(new Date(t.deadline)) && !isToday(new Date(t.deadline))
+  );
 
   const hour = new Date().getHours();
   const greeting =
@@ -189,7 +195,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           {
             icon: Layers,
@@ -198,37 +204,33 @@ export default function DashboardPage() {
             accent: "bg-primary/10 text-primary",
           },
           {
+            icon: TrendingUp,
+            label: "Done this week",
+            value: tasksLoading ? null : completedThisWeek,
+            accent: "bg-emerald-500/10 text-emerald-600",
+          },
+          {
+            icon: AlertTriangle,
+            label: "Overdue",
+            value: tasksLoading ? null : overdueTasks.length,
+            accent: overdueTasks.length > 0 ? "bg-red-100 text-red-600" : "bg-muted text-muted-foreground",
+          },
+          {
             icon: FolderOpen,
-            label: "Projects",
+            label: "Active projects",
             value: projectsLoading ? null : (projects?.length ?? 0),
             accent: "bg-amber-500/10 text-amber-600",
           },
-          {
-            icon: TrendingUp,
-            label: "Done today",
-            value: tasksLoading ? null : completedToday,
-            accent: "bg-emerald-500/10 text-emerald-600",
-          },
         ].map(({ icon: Icon, label, value, accent }) => (
-          <div
-            key={label}
-            className="border border-border/60 rounded-xl p-4 bg-card shadow-sm"
-          >
-            <div className="flex items-center gap-2.5 mb-3">
-              <div
-                className={cn(
-                  "flex items-center justify-center h-8 w-8 rounded-lg",
-                  accent
-                )}
-              >
-                <Icon className="h-4 w-4" />
+          <div key={label} className="border border-border/60 rounded-xl p-4 bg-card shadow-sm">
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className={cn("flex items-center justify-center h-7 w-7 rounded-lg", accent)}>
+                <Icon className="h-3.5 w-3.5" />
               </div>
-              <span className="text-xs font-medium text-muted-foreground">
-                {label}
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">{label}</span>
             </div>
             {value === null ? (
-              <Skeleton className="h-8 w-12" />
+              <Skeleton className="h-8 w-10" />
             ) : (
               <p className="text-3xl font-bold tracking-tight">{value}</p>
             )}
@@ -310,10 +312,10 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Projects */}
+      {/* Projects progress */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold">Your projects</h2>
+          <h2 className="text-sm font-semibold">Project progress</h2>
           <Link
             href="/projects"
             className="text-xs text-primary font-medium hover:underline flex items-center gap-1"
@@ -322,9 +324,9 @@ export default function DashboardPage() {
           </Link>
         </div>
         {projectsLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
+              <Skeleton key={i} className="h-14 rounded-xl" />
             ))}
           </div>
         ) : !projects || projects.length === 0 ? (
@@ -338,45 +340,50 @@ export default function DashboardPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {projects
-              ?.slice(0, 6)
-              .map(
-                (p: {
+          <div className="border border-border/60 rounded-xl bg-card shadow-sm overflow-hidden">
+            {projects.slice(0, 8).map(
+              (
+                p: {
                   id: string;
                   name: string;
                   color: string;
-                  description?: string;
                   _count?: { tasks: number };
-                }) => (
+                  doneCount?: number;
+                },
+                idx: number
+              ) => {
+                const total = p._count?.tasks ?? 0;
+                const done = p.doneCount ?? 0;
+                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                return (
                   <Link
                     key={p.id}
                     href={`/projects/${p.id}`}
-                    className="group border border-border/60 rounded-xl bg-card shadow-sm hover:shadow-md hover:border-border transition-all overflow-hidden"
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group",
+                      idx !== 0 && "border-t border-border/40"
+                    )}
                   >
-                    <div
-                      className="h-1.5 w-full"
-                      style={{ backgroundColor: p.color }}
-                    />
-                    <div className="p-3.5">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className="h-3 w-3 rounded-full shrink-0"
-                          style={{ backgroundColor: p.color }}
-                        />
-                        <span className="text-sm font-semibold truncate group-hover:text-primary transition-colors">
-                          {p.name}
-                        </span>
+                    <span className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{p.name}</p>
+                        <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">{done}/{total}</span>
                       </div>
-                      {p._count?.tasks !== undefined && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {p._count.tasks} task{p._count.tasks !== 1 ? "s" : ""}
-                        </p>
-                      )}
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%`, backgroundColor: p.color }}
+                        />
+                      </div>
                     </div>
+                    <span className="text-xs font-semibold flex-shrink-0 w-9 text-right" style={{ color: pct === 100 ? "#22c55e" : p.color }}>
+                      {pct}%
+                    </span>
                   </Link>
-                )
-              )}
+                );
+              }
+            )}
           </div>
         )}
       </div>
