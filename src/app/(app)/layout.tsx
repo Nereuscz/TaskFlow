@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { CommandMenu } from "@/components/CommandMenu";
 
 export default async function AppLayout({
   children,
@@ -18,6 +19,7 @@ export default async function AppLayout({
         <Header />
         <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>
+      <CommandMenu />
     </div>
   );
 }

@@ -5,7 +5,7 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
 
   // Public paths
-  const publicPaths = ["/login", "/signup", "/api/auth"];
+  const publicPaths = ["/login", "/signup", "/forgot-password", "/reset-password", "/api/auth"];
   const isPublic = publicPaths.some((p) => pathname.startsWith(p));
 
   // Allow invite paths without auth (token validated server-side)

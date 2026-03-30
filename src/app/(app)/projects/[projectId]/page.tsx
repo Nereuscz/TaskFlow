@@ -1,11 +1,12 @@
 "use client";
 
 import { use } from "react";
+import Link from "next/link";
 import { useProjectBoard } from "@/hooks/useTasks";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { TaskDetail } from "@/components/tasks/TaskDetail";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ChevronRight } from "lucide-react";
 
 export default function ProjectPage({
   params,
@@ -43,12 +44,21 @@ export default function ProjectPage({
 
   return (
     <>
-      <div className="mb-4 flex items-center gap-3">
-        <div
-          className="h-4 w-4 rounded-full shrink-0"
-          style={{ backgroundColor: board.color }}
-        />
-        <h1 className="text-xl font-semibold">{board.name}</h1>
+      <div className="mb-4 space-y-1">
+        <nav className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Link href="/projects" className="hover:text-foreground transition-colors">
+            Projects
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="text-foreground font-medium truncate">{board.name}</span>
+        </nav>
+        <div className="flex items-center gap-3">
+          <div
+            className="h-4 w-4 rounded-full shrink-0"
+            style={{ backgroundColor: board.color }}
+          />
+          <h1 className="text-xl font-bold tracking-tight">{board.name}</h1>
+        </div>
       </div>
 
       <div className="h-[calc(100%-3rem)] overflow-hidden">

@@ -10,7 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Users, ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 type Member = {
   id: string;
@@ -58,11 +59,20 @@ export default function MembersPage() {
 
   return (
     <div className="max-w-xl mx-auto space-y-8">
-      <h1 className="text-2xl font-semibold">Team members</h1>
+      <div>
+        <nav className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
+          <Link href="/settings" className="hover:text-foreground transition-colors">
+            Settings
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="text-foreground font-medium">Members</span>
+        </nav>
+        <h1 className="text-2xl font-bold tracking-tight">Team members</h1>
+      </div>
 
       {/* Invite */}
       {isOwner && (
-        <div className="border rounded-xl p-6 bg-card space-y-4">
+        <div className="border border-border/60 rounded-xl p-6 bg-card shadow-sm space-y-4">
           <h2 className="text-sm font-medium">Invite a member</h2>
           <div className="flex gap-2">
             <div className="flex-1 space-y-1">
@@ -88,7 +98,7 @@ export default function MembersPage() {
       )}
 
       {/* Members list */}
-      <div className="border rounded-xl divide-y bg-card">
+      <div className="border border-border/60 rounded-xl divide-y divide-border/40 bg-card shadow-sm">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 p-4">
@@ -99,6 +109,11 @@ export default function MembersPage() {
               </div>
             </div>
           ))
+        ) : !members || members.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Users className="h-8 w-8 text-muted-foreground/40 mb-2" />
+            <p className="text-sm text-muted-foreground">No team members yet.</p>
+          </div>
         ) : (
           members?.map((member) => (
             <div key={member.id} className="flex items-center gap-3 p-4">

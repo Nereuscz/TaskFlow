@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { AlertDialog } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 interface KanbanColumnProps {
@@ -40,6 +41,7 @@ export function KanbanColumn({
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [renaming, setRenaming] = useState(false);
   const [columnName, setColumnName] = useState(column.name);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const taskIds = column.tasks.map((t) => t.id);
 
@@ -84,7 +86,7 @@ export function KanbanColumn({
             className="text-sm font-semibold tracking-tight text-foreground hover:text-foreground/80 flex items-center gap-2"
           >
             {column.name}
-            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-md bg-muted text-muted-foreground text-xs font-medium">
               {column.tasks.length}
             </span>
           </button>
@@ -114,7 +116,7 @@ export function KanbanColumn({
                     toast.error("Move or delete tasks before deleting this column.");
                     return;
                   }
-                  onDeleteColumn(column.id);
+                  setDeleteOpen(true);
                 }}
               >
                 Delete column
@@ -128,8 +130,8 @@ export function KanbanColumn({
       <div
         ref={setNodeRef}
         className={cn(
-          "flex-1 min-h-[120px] rounded-xl p-2 space-y-2 transition-all bg-muted/30",
-          isOver && "bg-primary/6 ring-2 ring-inset ring-primary/20"
+          "flex-1 min-h-[120px] rounded-xl p-2 space-y-2 transition-all bg-muted/40 border border-border/30",
+          isOver && "bg-primary/5 ring-2 ring-inset ring-primary/20 border-primary/30"
         )}
       >
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
@@ -177,6 +179,16 @@ export function KanbanColumn({
           </button>
         )}
       </div>
+
+      <AlertDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete column"
+        description={`Are you sure you want to delete "${column.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => onDeleteColumn(column.id)}
+      />
     </div>
   );
 }

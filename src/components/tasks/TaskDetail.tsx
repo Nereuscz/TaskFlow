@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PriorityBadge } from "./PriorityBadge";
+import { AlertDialog } from "@/components/ui/alert-dialog";
 import { Calendar, Clock, CheckSquare, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -36,6 +37,7 @@ export function TaskDetail({ projectId }: { projectId?: string }) {
 
   const { data: task, isLoading } = useTask(taskId);
   const [description, setDescription] = useState<string | undefined>(undefined);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const updateMutation = useMutation({
     mutationFn: async (data: Record<string, unknown>) => {
@@ -93,7 +95,7 @@ export function TaskDetail({ projectId }: { projectId?: string }) {
                   variant="ghost"
                   size="icon"
                   className="shrink-0 text-destructive hover:text-destructive"
-                  onClick={() => deleteMutation.mutate()}
+                  onClick={() => setDeleteOpen(true)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -127,7 +129,7 @@ export function TaskDetail({ projectId }: { projectId?: string }) {
             <div className="mt-6 space-y-5">
               {/* Description */}
               <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+                <label className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-1.5 block">
                   Description
                 </label>
                 <Textarea
@@ -229,6 +231,17 @@ export function TaskDetail({ projectId }: { projectId?: string }) {
           </>
         )}
       </SheetContent>
+
+      <AlertDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete task"
+        description="This action cannot be undone. The task and all its data will be permanently deleted."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => deleteMutation.mutate()}
+        loading={deleteMutation.isPending}
+      />
     </Sheet>
   );
 }

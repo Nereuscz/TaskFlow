@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { LogOut, Plus, Settings, User } from "lucide-react";
+import { LogOut, Plus, Settings, User, Users } from "lucide-react";
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 
 const PAGE_TITLES: { prefix: string; label: string }[] = [
@@ -22,6 +22,7 @@ const PAGE_TITLES: { prefix: string; label: string }[] = [
   { prefix: "/projects", label: "Projects" },
   { prefix: "/tasks", label: "My Tasks" },
   { prefix: "/timer", label: "Timer" },
+  { prefix: "/settings/profile", label: "Profile" },
   { prefix: "/settings", label: "Settings" },
 ];
 
@@ -40,34 +41,36 @@ export function Header() {
     PAGE_TITLES.find((p) => pathname.startsWith(p.prefix))?.label ?? "TaskFlow";
 
   return (
-    <header className="h-16 border-b border-border/60 flex items-center justify-between px-4 bg-background">
+    <header className="h-14 border-b border-border/40 flex items-center justify-between px-5 bg-card/50">
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold">{pageTitle}</span>
+        <span className="text-sm font-semibold tracking-tight">{pageTitle}</span>
         {user?.workspaceName && (
-          <span className="text-muted-foreground/50 text-sm hidden sm:inline">·</span>
+          <>
+            <span className="text-muted-foreground/40 text-sm hidden sm:inline">/</span>
+            <span className="text-sm text-muted-foreground/60 hidden sm:inline">
+              {user?.workspaceName}
+            </span>
+          </>
         )}
-        <span className="text-sm text-muted-foreground hidden sm:inline">
-          {user?.workspaceName}
-        </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <Button
           size="sm"
           onClick={() => setCreateOpen(true)}
-          className="gap-1.5 shadow-sm font-medium"
+          className="gap-1.5 font-medium rounded-lg"
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">New task</span>
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-8 w-8 ring-2 ring-border">
               <AvatarImage src={user?.image ?? undefined} />
-              <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+              <AvatarFallback className="text-xs bg-primary/10 text-primary font-medium">{initials}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{user?.name}</p>
@@ -75,12 +78,16 @@ export function Header() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => router.push("/settings/profile")} className="flex items-center gap-2 cursor-pointer">
+              <User className="h-4 w-4" />
+              Profile
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push("/settings")} className="flex items-center gap-2 cursor-pointer">
               <Settings className="h-4 w-4" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push("/settings/members")} className="flex items-center gap-2 cursor-pointer">
-              <User className="h-4 w-4" />
+              <Users className="h-4 w-4" />
               Team members
             </DropdownMenuItem>
             <DropdownMenuSeparator />

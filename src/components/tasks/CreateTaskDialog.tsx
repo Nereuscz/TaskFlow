@@ -13,6 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useProjects } from "@/hooks/useProjects";
@@ -20,12 +27,42 @@ import { Check } from "lucide-react";
 import type { TaskPriority } from "@prisma/client";
 import type { ProjectBoard } from "@/hooks/useTasks";
 
-const PRIORITY_OPTIONS: { value: TaskPriority; label: string; activeClass: string; idleClass: string }[] = [
-  { value: "NONE", label: "None", activeClass: "bg-muted text-muted-foreground border-muted", idleClass: "text-muted-foreground" },
-  { value: "LOW", label: "Low", activeClass: "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-600", idleClass: "text-blue-600 dark:text-blue-400" },
-  { value: "MEDIUM", label: "Medium", activeClass: "bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-600", idleClass: "text-yellow-600 dark:text-yellow-400" },
-  { value: "HIGH", label: "High", activeClass: "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-600", idleClass: "text-orange-600 dark:text-orange-400" },
-  { value: "URGENT", label: "Urgent", activeClass: "bg-red-100 text-red-700 border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-600", idleClass: "text-red-600 dark:text-red-400" },
+const PRIORITY_OPTIONS: {
+  value: TaskPriority;
+  label: string;
+  activeClass: string;
+  idleClass: string;
+}[] = [
+  {
+    value: "NONE",
+    label: "None",
+    activeClass: "bg-stone-100 text-stone-600 border-stone-300",
+    idleClass: "text-stone-500",
+  },
+  {
+    value: "LOW",
+    label: "Low",
+    activeClass: "bg-sky-50 text-sky-700 border-sky-300",
+    idleClass: "text-sky-600",
+  },
+  {
+    value: "MEDIUM",
+    label: "Medium",
+    activeClass: "bg-amber-50 text-amber-700 border-amber-300",
+    idleClass: "text-amber-600",
+  },
+  {
+    value: "HIGH",
+    label: "High",
+    activeClass: "bg-orange-50 text-orange-700 border-orange-300",
+    idleClass: "text-orange-600",
+  },
+  {
+    value: "URGENT",
+    label: "Urgent",
+    activeClass: "bg-red-50 text-red-700 border-red-300",
+    idleClass: "text-red-600",
+  },
 ];
 
 interface CreateTaskDialogProps {
@@ -61,7 +98,9 @@ export function CreateTaskDialog({
     enabled: !!projectId && open,
   });
 
-  const { data: tags } = useQuery<{ id: string; name: string; color: string }[]>({
+  const { data: tags } = useQuery<
+    { id: string; name: string; color: string }[]
+  >({
     queryKey: ["tags"],
     queryFn: async () => {
       const res = await fetch("/api/tags");
@@ -135,15 +174,15 @@ export function CreateTaskDialog({
       toast.success("Task created");
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create task");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create task"
+      );
     } finally {
       setIsSubmitting(false);
     }
   }
 
   const columns = projectBoard?.columns ?? [];
-  const selectClass =
-    "w-full h-8 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -153,12 +192,11 @@ export function CreateTaskDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-1">
-          {/* Title */}
           <div className="space-y-1.5">
             <Label htmlFor="ct-title">Title</Label>
             <Input
               id="ct-title"
-              placeholder="Task title…"
+              placeholder="Task title..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               autoFocus
@@ -166,64 +204,69 @@ export function CreateTaskDialog({
             />
           </div>
 
-          {/* Project & Column */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="ct-project">Project</Label>
-              <select
-                id="ct-project"
+              <Label>Project</Label>
+              <Select
                 value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
-                className={selectClass}
-                required
+                onValueChange={(v) => v && setProjectId(v)}
               >
-                <option value="" disabled>Select project</option>
-                {projects?.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ct-column">Column</Label>
-              <select
-                id="ct-column"
+              <Label>Column</Label>
+              <Select
                 value={columnId}
-                onChange={(e) => setColumnId(e.target.value)}
-                className={selectClass}
+                onValueChange={(v) => v && setColumnId(v)}
                 disabled={!projectId || columns.length === 0}
-                required
               >
-                <option value="" disabled>Select column</option>
-                {columns.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select column" />
+                </SelectTrigger>
+                <SelectContent>
+                  {columns.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Priority */}
           <div className="space-y-1.5">
             <Label>Priority</Label>
             <div className="flex gap-1.5 flex-wrap">
-              {PRIORITY_OPTIONS.map(({ value, label, activeClass, idleClass }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setPriority(value)}
-                  className={cn(
-                    "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
-                    priority === value
-                      ? activeClass
-                      : cn("border-input hover:bg-accent", idleClass)
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
+              {PRIORITY_OPTIONS.map(
+                ({ value, label, activeClass, idleClass }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setPriority(value)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors",
+                      priority === value
+                        ? activeClass
+                        : cn("border-input hover:bg-accent", idleClass)
+                    )}
+                  >
+                    {label}
+                  </button>
+                )
+              )}
             </div>
           </div>
 
-          {/* Deadline */}
           <div className="space-y-1.5">
             <Label htmlFor="ct-deadline">Deadline</Label>
             <Input
@@ -234,7 +277,6 @@ export function CreateTaskDialog({
             />
           </div>
 
-          {/* Tags */}
           {tags && tags.length > 0 && (
             <div className="space-y-1.5">
               <Label>Tags</Label>
@@ -247,14 +289,19 @@ export function CreateTaskDialog({
                       type="button"
                       onClick={() =>
                         setTagIds((prev) =>
-                          selected ? prev.filter((id) => id !== tag.id) : [...prev, tag.id]
+                          selected
+                            ? prev.filter((id) => id !== tag.id)
+                            : [...prev, tag.id]
                         )
                       }
                       className={cn(
-                        "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-opacity",
+                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium transition-opacity",
                         selected ? "opacity-100" : "opacity-50 hover:opacity-75"
                       )}
-                      style={{ backgroundColor: tag.color + "20", color: tag.color }}
+                      style={{
+                        backgroundColor: tag.color + "18",
+                        color: tag.color,
+                      }}
                     >
                       {selected && <Check className="h-3 w-3" />}
                       {tag.name}
@@ -265,12 +312,16 @@ export function CreateTaskDialog({
             </div>
           )}
 
-          {/* Description */}
           <div className="space-y-1.5">
-            <Label htmlFor="ct-description">Description <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <Label htmlFor="ct-description">
+              Description{" "}
+              <span className="font-normal text-muted-foreground">
+                (optional)
+              </span>
+            </Label>
             <Textarea
               id="ct-description"
-              placeholder="Add a description…"
+              placeholder="Add a description..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="min-h-16 text-sm resize-none"
@@ -280,9 +331,11 @@ export function CreateTaskDialog({
           <DialogFooter showCloseButton>
             <Button
               type="submit"
-              disabled={isSubmitting || !title.trim() || !projectId || !columnId}
+              disabled={
+                isSubmitting || !title.trim() || !projectId || !columnId
+              }
             >
-              {isSubmitting ? "Creating…" : "Create task"}
+              {isSubmitting ? "Creating..." : "Create task"}
             </Button>
           </DialogFooter>
         </form>

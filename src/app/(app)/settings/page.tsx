@@ -31,9 +31,9 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-xl mx-auto space-y-8">
-      <h1 className="text-2xl font-semibold">Settings</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
 
-      <div className="border rounded-xl p-6 bg-card space-y-4">
+      <div className="border border-border/60 rounded-xl p-6 bg-card shadow-sm space-y-4">
         <h2 className="text-sm font-medium">Workspace</h2>
         <div className="space-y-2">
           <Label htmlFor="ws-name">Workspace name</Label>
@@ -48,7 +48,7 @@ export default function SettingsPage() {
         </Button>
       </div>
 
-      <div className="border rounded-xl p-6 bg-card space-y-2">
+      <div className="border border-border/60 rounded-xl p-6 bg-card shadow-sm space-y-2">
         <h2 className="text-sm font-medium">Account</h2>
         <p className="text-sm text-muted-foreground">{session?.user.email}</p>
         <p className="text-xs text-muted-foreground capitalize">

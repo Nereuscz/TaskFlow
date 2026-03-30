@@ -50,8 +50,8 @@ export function TaskCard({ task, isDragOverlay = false }: TaskCardProps) {
       {...listeners}
       onClick={openDetail}
       className={cn(
-        "group relative bg-card border rounded-xl p-3.5 cursor-pointer select-none",
-        "shadow-sm hover:shadow-md hover:border-primary/50 hover:-translate-y-0.5 transition-all duration-150",
+        "group relative bg-card border border-border/60 rounded-xl p-3.5 cursor-pointer select-none",
+        "shadow-sm hover:shadow-md hover:border-border hover:-translate-y-0.5 transition-all duration-150",
         isDragging && !isDragOverlay && "opacity-40",
         isDragOverlay && "shadow-lg rotate-1 scale-105"
       )}

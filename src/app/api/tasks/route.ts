@@ -11,26 +11,45 @@ export async function GET(req: NextRequest) {
   const projectId = searchParams.get("projectId");
   const assigneeId = searchParams.get("assigneeId");
   const status = searchParams.get("status");
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)));
+  const search = searchParams.get("search");
 
-  const tasks = await prisma.task.findMany({
-    where: {
-      project: { workspaceId: session.user.workspaceId },
-      archivedAt: null,
-      parentId: null,
-      ...(projectId ? { projectId } : {}),
-      ...(assigneeId ? { assigneeId } : {}),
-      ...(status ? { status: status as never } : {}),
-    },
-    orderBy: [{ deadline: "asc" }, { order: "asc" }],
-    include: {
-      project: { select: { id: true, name: true, color: true } },
-      assignee: { select: { id: true, name: true, image: true } },
-      tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
-      _count: { select: { subtasks: true, checklist: true, timeEntries: true } },
+  const where = {
+    project: { workspaceId: session.user.workspaceId },
+    archivedAt: null,
+    parentId: null,
+    ...(projectId ? { projectId } : {}),
+    ...(assigneeId ? { assigneeId } : {}),
+    ...(status ? { status: status as never } : {}),
+    ...(search ? { title: { contains: search, mode: "insensitive" as const } } : {}),
+  };
+
+  const [tasks, total] = await Promise.all([
+    prisma.task.findMany({
+      where,
+      orderBy: [{ deadline: "asc" }, { order: "asc" }],
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        project: { select: { id: true, name: true, color: true } },
+        assignee: { select: { id: true, name: true, image: true } },
+        tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
+        _count: { select: { subtasks: true, checklist: true, timeEntries: true } },
+      },
+    }),
+    prisma.task.count({ where }),
+  ]);
+
+  return NextResponse.json({
+    tasks,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     },
   });
-
-  return NextResponse.json(tasks);
 }
 
 export async function POST(req: NextRequest) {

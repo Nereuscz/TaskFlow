@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Leaf } from "lucide-react";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -38,7 +39,6 @@ export default function SignupPage() {
       return;
     }
 
-    // Auto sign-in after signup
     const { signIn } = await import("next-auth/react");
     const result = await signIn("credentials", {
       email: form.get("email"),
@@ -57,10 +57,19 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-full max-w-sm space-y-6 p-8 border rounded-xl bg-card shadow-sm">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
-          <p className="text-sm text-muted-foreground">Start your personal workspace</p>
+      <div className="w-full max-w-sm space-y-6 p-8 border border-border/60 rounded-2xl bg-card shadow-sm">
+        <div className="space-y-3 text-center">
+          <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary mx-auto">
+            <Leaf className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Create an account
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Start your personal workspace
+            </p>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -70,27 +79,49 @@ export default function SignupPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" placeholder="you@example.com" required autoComplete="email" />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              required
+              autoComplete="email"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" name="password" type="password" placeholder="••••••••" required autoComplete="new-password" />
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              required
+              autoComplete="new-password"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="workspaceName">Workspace name</Label>
-            <Input id="workspaceName" name="workspaceName" placeholder="My Projects" required />
+            <Input
+              id="workspaceName"
+              name="workspaceName"
+              placeholder="My Projects"
+              required
+            />
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Creating account…" : "Create account"}
+            {loading ? "Creating account..." : "Create account"}
           </Button>
         </form>
 
         <p className="text-sm text-center text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="text-foreground underline underline-offset-4">
+          <Link
+            href="/login"
+            className="text-primary font-medium hover:underline"
+          >
             Sign in
           </Link>
         </p>
