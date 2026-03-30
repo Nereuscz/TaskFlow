@@ -15,8 +15,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog } from "@/components/ui/alert-dialog";
@@ -686,16 +686,16 @@ export function TaskDetail({ projectId }: { projectId?: string }) {
                     <label className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-1.5 block">
                       Description
                     </label>
-                    <Textarea
-                      placeholder="Add a description…"
-                      className="min-h-24 text-sm resize-none"
+                    <RichTextEditor
                       value={description ?? task.description ?? ""}
-                      onChange={(e) => setDescription(e.target.value)}
+                      onChange={(html) => setDescription(html)}
                       onBlur={() => {
                         if (description !== undefined && description !== task.description) {
                           updateMutation.mutate({ description });
                         }
                       }}
+                      placeholder="Add a description…"
+                      minHeight="96px"
                     />
                   </div>
 

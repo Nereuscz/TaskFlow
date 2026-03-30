@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import {
   Select,
   SelectTrigger,
@@ -313,18 +313,17 @@ export function CreateTaskDialog({
           )}
 
           <div className="space-y-1.5">
-            <Label htmlFor="ct-description">
+            <Label>
               Description{" "}
               <span className="font-normal text-muted-foreground">
                 (optional)
               </span>
             </Label>
-            <Textarea
-              id="ct-description"
-              placeholder="Add a description..."
+            <RichTextEditor
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="min-h-16 text-sm resize-none"
+              onChange={setDescription}
+              placeholder="Add a description…"
+              minHeight="80px"
             />
           </div>
 

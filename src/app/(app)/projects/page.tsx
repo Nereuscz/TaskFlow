@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useProjects } from "@/hooks/useProjects";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FolderOpen, Plus, MoreHorizontal, Trash2 } from "lucide-react";
+import { FolderOpen, Plus, MoreHorizontal, Trash2, LayoutGrid, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const PROJECT_COLORS = [
@@ -40,6 +40,17 @@ export default function ProjectsPage() {
     id: string;
     name: string;
   } | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("projects-view-mode");
+    if (saved === "list" || saved === "grid") setViewMode(saved);
+  }, []);
+
+  function toggleViewMode(mode: "grid" | "list") {
+    setViewMode(mode);
+    localStorage.setItem("projects-view-mode", mode);
+  }
 
   function handleCreate() {
     if (!name.trim()) return;
@@ -66,10 +77,38 @@ export default function ProjectsPage() {
             </p>
           )}
         </div>
-        <Button onClick={() => setOpen(true)} className="rounded-lg">
-          <Plus className="h-4 w-4 mr-2" />
-          New project
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-lg border border-border/60 p-0.5 bg-muted/30">
+            <button
+              onClick={() => toggleViewMode("grid")}
+              className={cn(
+                "h-7 w-7 flex items-center justify-center rounded-md transition-colors",
+                viewMode === "grid"
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Grid view"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => toggleViewMode("list")}
+              className={cn(
+                "h-7 w-7 flex items-center justify-center rounded-md transition-colors",
+                viewMode === "list"
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              title="List view"
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+          <Button onClick={() => setOpen(true)} className="rounded-lg">
+            <Plus className="h-4 w-4 mr-2" />
+            New project
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -90,7 +129,7 @@ export default function ProjectsPage() {
             New project
           </Button>
         </div>
-      ) : (
+      ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects?.map((project) => (
             <div
@@ -146,6 +185,60 @@ export default function ProjectsPage() {
                   </p>
                 )}
               </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* ── List view (Basecamp style) ── */
+        <div className="border border-border/60 rounded-xl bg-card shadow-sm overflow-hidden">
+          {projects?.map((project, idx) => (
+            <div
+              key={project.id}
+              className={cn(
+                "group flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors",
+                idx !== 0 && "border-t border-border/40"
+              )}
+            >
+              <div
+                className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
+                style={{ backgroundColor: project.color + "18" }}
+              >
+                <div
+                  className="h-3.5 w-3.5 rounded-full"
+                  style={{ backgroundColor: project.color }}
+                />
+              </div>
+
+              <Link
+                href={`/projects/${project.id}`}
+                className="flex-1 min-w-0"
+              >
+                <p className="font-semibold text-sm group-hover:text-primary transition-colors">
+                  {project.name}
+                </p>
+                {project.description && (
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {project.description}
+                  </p>
+                )}
+              </Link>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-accent shrink-0">
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() =>
+                      setDeleteTarget({ id: project.id, name: project.name })
+                    }
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete project
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ))}
         </div>

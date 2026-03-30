@@ -96,3 +96,86 @@
     letter-spacing: -0.025em;
   }
 }
+
+/* ── Tiptap rich text styles ─────────────────────────────────────────────── */
+.tiptap-content {
+  line-height: 1.6;
+
+  > * + * {
+    margin-top: 0.6em;
+  }
+
+  h2 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-top: 1em;
+  }
+
+  h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-top: 0.8em;
+  }
+
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+  u { text-decoration: underline; text-underline-offset: 2px; }
+  s { text-decoration: line-through; }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.82em;
+    background-color: oklch(0.945 0.015 85);
+    border: 1px solid oklch(0.915 0.01 85);
+    border-radius: 0.25rem;
+    padding: 0.1em 0.35em;
+  }
+
+  pre {
+    background-color: oklch(0.2 0.01 250);
+    color: oklch(0.9 0.02 85);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+
+    code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 0.82em;
+      color: inherit;
+    }
+  }
+
+  blockquote {
+    border-left: 3px solid oklch(0.52 0.17 155);
+    margin-left: 0;
+    padding-left: 1em;
+    color: oklch(0.45 0.01 75);
+    font-style: italic;
+  }
+
+  ul {
+    list-style-type: disc;
+    padding-left: 1.4em;
+
+    li { margin-top: 0.2em; }
+  }
+
+  ol {
+    list-style-type: decimal;
+    padding-left: 1.4em;
+
+    li { margin-top: 0.2em; }
+  }
+
+  a {
+    color: oklch(0.52 0.17 155);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  p:empty { display: none; }
+}
