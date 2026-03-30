@@ -182,6 +182,19 @@ model Task {
   tags        TaskTag[]
   timeEntries TimeEntry[]
   checklist   ChecklistItem[]
+  attachments Attachment[]
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  taskId    String
+  name      String
+  filename  String
+  size      Int
+  mimeType  String
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 }
 
 enum TaskStatus {

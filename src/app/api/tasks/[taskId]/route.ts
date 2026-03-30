@@ -40,6 +40,7 @@ export async function GET(
       },
       project: { select: { id: true, name: true, color: true } },
       column: { select: { id: true, name: true } },
+      attachments: { orderBy: { createdAt: "asc" } },
     },
   });
 
