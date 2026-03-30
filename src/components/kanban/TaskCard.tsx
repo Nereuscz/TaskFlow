@@ -50,7 +50,7 @@ export function TaskCard({ task, isDragOverlay = false }: TaskCardProps) {
       {...listeners}
       onClick={openDetail}
       className={cn(
-        "group relative bg-card border border-border/60 rounded-xl p-3.5 cursor-pointer select-none",
+        "group relative bg-card border border-border/60 rounded-xl p-3.5 cursor-pointer select-none overflow-hidden",
         "shadow-sm hover:shadow-md hover:border-border hover:-translate-y-0.5 transition-all duration-150",
         isDragging && !isDragOverlay && "opacity-40",
         isDragOverlay && "shadow-lg rotate-1 scale-105"
@@ -59,7 +59,7 @@ export function TaskCard({ task, isDragOverlay = false }: TaskCardProps) {
       {/* Priority indicator line */}
       <div
         className={cn(
-          "absolute left-0 top-0 bottom-0 w-1 rounded-l-xl",
+          "absolute left-0 top-0 bottom-0 w-1",
           task.priority === "URGENT" && "bg-red-500",
           task.priority === "HIGH" && "bg-orange-500",
           task.priority === "MEDIUM" && "bg-yellow-500",
