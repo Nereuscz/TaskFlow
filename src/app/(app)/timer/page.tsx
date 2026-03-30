@@ -105,7 +105,7 @@ export default function TimerPage() {
             <Label className="text-xs text-muted-foreground">Working on</Label>
             <Select
               value={selectedTaskId ?? ""}
-              onValueChange={(v: string) => setSelectedTaskId(v || null)}
+              onValueChange={(v: string | null) => setSelectedTaskId(v || null)}
             >
               <SelectTrigger className="w-full h-9">
                 <SelectValue placeholder="Select a task (optional)" />
