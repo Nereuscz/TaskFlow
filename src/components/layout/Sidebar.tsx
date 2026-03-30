@@ -86,7 +86,10 @@ export function Sidebar() {
           </Tooltip>
         )}
         {navItems.map(({ href, icon: Icon, label }) => {
-          const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+          const active =
+            pathname === href ||
+            (href !== "/dashboard" && href !== "/projects" && pathname.startsWith(href)) ||
+            (href === "/projects" && pathname === "/projects");
           const linkEl = (
             <Link
               key={href}
