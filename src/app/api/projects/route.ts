@@ -19,6 +19,7 @@ export async function GET() {
     orderBy: { createdAt: "asc" },
     include: {
       _count: { select: { tasks: { where: { archivedAt: null } } } },
+      tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
     },
   });
 

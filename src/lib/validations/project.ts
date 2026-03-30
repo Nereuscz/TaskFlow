@@ -7,7 +7,9 @@ export const createProjectSchema = z.object({
   icon: z.string().optional(),
 });
 
-export const updateProjectSchema = createProjectSchema.partial();
+export const updateProjectSchema = createProjectSchema.partial().extend({
+  tagIds: z.array(z.string().cuid()).optional(),
+});
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;

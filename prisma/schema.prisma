@@ -129,6 +129,7 @@ model Project {
   description String?   @db.Text
   color       String    @default("#6366f1")
   icon        String?
+  coverImage  String?
   archivedAt  DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -136,6 +137,17 @@ model Project {
   workspace Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   columns   KanbanColumn[]
   tasks     Task[]
+  tags      ProjectTag[]
+}
+
+model ProjectTag {
+  projectId String
+  tagId     String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, tagId])
 }
 
 // ─── Kanban ──────────────────────────────────────────────────────────────────
@@ -232,8 +244,9 @@ model Tag {
   name        String
   color       String @default("#64748b")
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   tasks     TaskTag[]
+  projects  ProjectTag[]
 
   @@unique([workspaceId, name])
 }

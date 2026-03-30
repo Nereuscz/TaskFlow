@@ -24,6 +24,7 @@ export async function GET(
   const board = await prisma.project.findUnique({
     where: { id: projectId },
     include: {
+      tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
       columns: {
         orderBy: { order: "asc" },
         include: {
@@ -61,9 +62,24 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
-  const updated = await prisma.project.update({
-    where: { id: projectId },
-    data: parsed.data,
+  const { tagIds, ...projectData } = parsed.data;
+
+  const updated = await prisma.$transaction(async (tx) => {
+    if (tagIds !== undefined) {
+      await tx.projectTag.deleteMany({ where: { projectId } });
+      if (tagIds.length > 0) {
+        await tx.projectTag.createMany({
+          data: tagIds.map((tagId) => ({ projectId, tagId })),
+        });
+      }
+    }
+    return tx.project.update({
+      where: { id: projectId },
+      data: projectData,
+      include: {
+        tags: { include: { tag: { select: { id: true, name: true, color: true } } } },
+      },
+    });
   });
 
   return NextResponse.json(updated);

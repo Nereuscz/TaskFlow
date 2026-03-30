@@ -390,23 +390,21 @@ function AttachmentsSection({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deletePending, setDeletePending] = useState(false);
 
+  const images = attachments.filter((a) => a.mimeType.startsWith("image/"));
+  const files = attachments.filter((a) => !a.mimeType.startsWith("image/"));
+
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (file.size > 10 * 1024 * 1024) {
       toast.error("File is too large (max 10 MB)");
       return;
     }
-
     setUploading(true);
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch(`/api/tasks/${taskId}/attachments`, {
-        method: "POST",
-        body: form,
-      });
+      const res = await fetch(`/api/tasks/${taskId}/attachments`, { method: "POST", body: form });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error ?? "Upload failed");
@@ -439,65 +437,89 @@ function AttachmentsSection({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-1.5">
           <Paperclip className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">
-            Attachments {attachments.length > 0 && <span className="text-muted-foreground">({attachments.length})</span>}
+            Attachments{attachments.length > 0 && <span className="text-muted-foreground ml-1">({attachments.length})</span>}
           </span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs gap-1"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-        >
+        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
           {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
           {uploading ? "Uploading…" : "Add file"}
         </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          onChange={handleFileChange}
-        />
+        <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
       </div>
 
       {attachments.length === 0 && !uploading ? (
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="w-full border-2 border-dashed border-border/60 rounded-lg p-4 text-center text-sm text-muted-foreground hover:border-primary/40 hover:text-primary/70 hover:bg-primary/5 transition-colors"
+          className="w-full border-2 border-dashed border-border/60 rounded-xl p-5 text-center text-sm text-muted-foreground hover:border-primary/40 hover:text-primary/70 hover:bg-primary/5 transition-colors"
         >
-          <Paperclip className="h-4 w-4 mx-auto mb-1 opacity-50" />
-          Click to upload a file (max 10 MB)
+          <Paperclip className="h-5 w-5 mx-auto mb-1.5 opacity-40" />
+          <span className="block font-medium text-xs">Drag & drop or click to upload</span>
+          <span className="text-[11px] opacity-60">Max 10 MB</span>
         </button>
       ) : (
-        <div className="space-y-1.5">
-          {attachments.map((att) => (
-            <div
-              key={att.id}
-              className="group flex items-center gap-2.5 p-2 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 transition-colors"
-            >
-              <FileIcon mimeType={att.mimeType} className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="flex-1 text-sm truncate">{att.name}</span>
-              <span className="text-xs text-muted-foreground flex-shrink-0">{formatBytes(att.size)}</span>
-              <a
-                href={`/api/attachments/${att.id}`}
-                download={att.name}
-                className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-foreground rounded"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Download className="h-3.5 w-3.5" />
-              </a>
-              <button
-                className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive rounded"
-                onClick={() => setDeleteId(att.id)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+        <div className="space-y-3">
+          {/* Image gallery grid */}
+          {images.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {images.map((att) => (
+                <div key={att.id} className="group relative aspect-square rounded-lg overflow-hidden border border-border/50 bg-muted/40">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/attachments/${att.id}`}
+                    alt={att.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors" />
+                  <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <a
+                      href={`/api/attachments/${att.id}`}
+                      download={att.name}
+                      className="h-6 w-6 flex items-center justify-center rounded-md bg-black/50 hover:bg-black/70 text-white"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Download className="h-3 w-3" />
+                    </a>
+                    <button
+                      className="h-6 w-6 flex items-center justify-center rounded-md bg-black/50 hover:bg-destructive text-white"
+                      onClick={() => setDeleteId(att.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-white text-[10px] truncate">{att.name}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+
+          {/* Non-image files list */}
+          {files.length > 0 && (
+            <div className="space-y-1.5">
+              {files.map((att) => (
+                <div key={att.id} className="group flex items-center gap-2.5 p-2.5 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 transition-colors">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <FileIcon mimeType={att.mimeType} className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{att.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatBytes(att.size)}</p>
+                  </div>
+                  <a href={`/api/attachments/${att.id}`} download={att.name} className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-all" onClick={(e) => e.stopPropagation()}>
+                    <Download className="h-3.5 w-3.5" />
+                  </a>
+                  <button className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-destructive rounded-md hover:bg-muted transition-all" onClick={() => setDeleteId(att.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

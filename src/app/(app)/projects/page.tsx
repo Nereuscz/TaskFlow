@@ -131,116 +131,148 @@ export default function ProjectsPage() {
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {projects?.map((project) => (
-            <div
-              key={project.id}
-              className="group relative border border-border/60 rounded-xl bg-card shadow-sm hover:shadow-md hover:border-border transition-all overflow-hidden"
-            >
+          {projects?.map((project) => {
+            const projWithTags = project as typeof project & { tags?: { tag: { id: string; name: string; color: string } }[] };
+            return (
               <div
-                className="h-2 w-full"
-                style={{ backgroundColor: project.color }}
-              />
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <Link
-                    href={`/projects/${project.id}`}
-                    className="flex items-center gap-2.5 min-w-0 flex-1"
-                  >
-                    <span
-                      className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: project.color + "18" }}
+                key={project.id}
+                className="group relative border border-border/60 rounded-2xl bg-card shadow-sm hover:shadow-lg hover:border-border transition-all overflow-hidden"
+              >
+                {/* Cover image / placeholder */}
+                <Link href={`/projects/${project.id}`} className="block">
+                  {project.coverImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={`/api/projects/${project.id}/cover`}
+                      alt={project.name}
+                      className="w-full h-36 object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-36 flex items-center justify-center"
+                      style={{
+                        background: `linear-gradient(135deg, ${project.color}18 0%, ${project.color}35 100%)`,
+                      }}
                     >
-                      <span
-                        className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: project.color }}
-                      />
-                    </span>
-                    <h3 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
-                      {project.name}
-                    </h3>
-                  </Link>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-accent shrink-0">
-                      <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={() =>
-                          setDeleteTarget({
-                            id: project.id,
-                            name: project.name,
-                          })
-                        }
+                      <div
+                        className="h-12 w-12 rounded-2xl flex items-center justify-center"
+                        style={{ backgroundColor: project.color + "30" }}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete project
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <div className="h-5 w-5 rounded-full" style={{ backgroundColor: project.color }} />
+                      </div>
+                    </div>
+                  )}
+                </Link>
+
+                <div className="p-3.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link href={`/projects/${project.id}`} className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+                        {project.name}
+                      </h3>
+                      {project.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                          {project.description}
+                        </p>
+                      )}
+                    </Link>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-accent shrink-0 mt-[-2px]">
+                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setDeleteTarget({ id: project.id, name: project.name })}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete project
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {projWithTags.tags && projWithTags.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {projWithTags.tags.map(({ tag }) => (
+                        <span
+                          key={tag.id}
+                          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                          style={{ backgroundColor: tag.color + "20", color: tag.color }}
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {project.description && (
-                  <p className="text-xs text-muted-foreground line-clamp-2 ml-[42px]">
-                    {project.description}
-                  </p>
-                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
-        /* ── List view (Basecamp style) ── */
+        /* ── List view (Air/Basecamp style) ── */
         <div className="border border-border/60 rounded-xl bg-card shadow-sm overflow-hidden">
-          {projects?.map((project, idx) => (
-            <div
-              key={project.id}
-              className={cn(
-                "group flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors",
-                idx !== 0 && "border-t border-border/40"
-              )}
-            >
+          {projects?.map((project, idx) => {
+            const projWithTags = project as typeof project & { tags?: { tag: { id: string; name: string; color: string } }[] };
+            return (
               <div
-                className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
-                style={{ backgroundColor: project.color + "18" }}
-              >
-                <div
-                  className="h-3.5 w-3.5 rounded-full"
-                  style={{ backgroundColor: project.color }}
-                />
-              </div>
-
-              <Link
-                href={`/projects/${project.id}`}
-                className="flex-1 min-w-0"
-              >
-                <p className="font-semibold text-sm group-hover:text-primary transition-colors">
-                  {project.name}
-                </p>
-                {project.description && (
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
-                    {project.description}
-                  </p>
+                key={project.id}
+                className={cn(
+                  "group flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors",
+                  idx !== 0 && "border-t border-border/40"
                 )}
-              </Link>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-accent shrink-0">
-                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() =>
-                      setDeleteTarget({ id: project.id, name: project.name })
-                    }
+              >
+                {/* Cover thumbnail or color dot */}
+                {project.coverImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`/api/projects/${project.id}/cover`}
+                    alt={project.name}
+                    className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div
+                    className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: project.color + "18" }}
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete project
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ))}
+                    <div className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: project.color }} />
+                  </div>
+                )}
+
+                <Link href={`/projects/${project.id}`} className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm group-hover:text-primary transition-colors">
+                    {project.name}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    {project.description && (
+                      <p className="text-xs text-muted-foreground truncate">{project.description}</p>
+                    )}
+                    {projWithTags.tags && projWithTags.tags.length > 0 && projWithTags.tags.map(({ tag }) => (
+                      <span key={tag.id} className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium" style={{ backgroundColor: tag.color + "20", color: tag.color }}>
+                        {tag.name}
+                      </span>
+                    ))}
+                  </div>
+                </Link>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-accent shrink-0">
+                    <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => setDeleteTarget({ id: project.id, name: project.name })}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete project
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            );
+          })}
         </div>
       )}
 
