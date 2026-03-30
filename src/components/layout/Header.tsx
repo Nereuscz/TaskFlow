@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,9 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { LogOut, Plus, Settings, User, Users } from "lucide-react";
-import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
+import { LogOut, Settings, User, Users } from "lucide-react";
 
 const PAGE_TITLES: { prefix: string; label: string }[] = [
   { prefix: "/dashboard", label: "Dashboard" },
@@ -30,7 +27,6 @@ export function Header() {
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
-  const [createOpen, setCreateOpen] = useState(false);
   const user = session?.user;
 
   const initials = user?.name
@@ -55,14 +51,6 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          onClick={() => setCreateOpen(true)}
-          className="gap-1.5 font-medium rounded-lg"
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">New task</span>
-        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <Avatar className="h-8 w-8 ring-2 ring-border">
@@ -102,7 +90,6 @@ export function Header() {
         </DropdownMenu>
       </div>
 
-      <CreateTaskDialog open={createOpen} onOpenChange={setCreateOpen} />
     </header>
   );
 }
