@@ -108,8 +108,14 @@ export default function TimerPage() {
               onValueChange={(v: string | null) => setSelectedTaskId(v || null)}
             >
               <SelectTrigger className="w-full h-9">
-                <SelectValue placeholder="Select a task (optional)" />
-              </SelectTrigger>
+                  <SelectValue>
+                    {(value: string | null) =>
+                      value
+                        ? (activeTasks.find((t) => t.id === value)?.title ?? value)
+                        : <span className="text-muted-foreground">Select a task (optional)</span>
+                    }
+                  </SelectValue>
+                </SelectTrigger>
               <SelectContent>
                 {activeTasks.length === 0 ? (
                   <div className="py-4 text-center text-sm text-muted-foreground">
@@ -150,7 +156,13 @@ export default function TimerPage() {
                 onValueChange={(v: string | null) => setManualTaskId(v ?? "")}
               >
                 <SelectTrigger className="w-full h-9">
-                  <SelectValue placeholder="Select task" />
+                  <SelectValue>
+                    {(value: string | null) =>
+                      value
+                        ? (tasks.find((t) => t.id === value)?.title ?? value)
+                        : <span className="text-muted-foreground">Select task</span>
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {tasks.map((t) => (

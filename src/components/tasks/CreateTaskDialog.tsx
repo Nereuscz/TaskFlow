@@ -212,7 +212,13 @@ export function CreateTaskDialog({
                 onValueChange={(v) => v && setProjectId(v)}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select project" />
+                  <SelectValue>
+                    {(value: string | null) =>
+                      value
+                        ? (projects?.find((p) => p.id === value)?.name ?? value)
+                        : <span className="text-muted-foreground">Select project</span>
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {projects?.map((p) => (
@@ -231,7 +237,13 @@ export function CreateTaskDialog({
                 disabled={!projectId || columns.length === 0}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select column" />
+                  <SelectValue>
+                    {(value: string | null) =>
+                      value
+                        ? (columns.find((c) => c.id === value)?.name ?? value)
+                        : <span className="text-muted-foreground">Select column</span>
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {columns.map((c) => (

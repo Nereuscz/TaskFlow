@@ -298,7 +298,11 @@ export default function TasksPage() {
             }
           >
             <SelectTrigger className="w-fit" size="sm">
-              <SelectValue placeholder="Status" />
+              <SelectValue>
+                {(value: string | null) =>
+                  STATUS_FILTER_OPTIONS.find((o) => o.value === value)?.label ?? "Status"
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {STATUS_FILTER_OPTIONS.map(({ value, label }) => (
@@ -317,7 +321,11 @@ export default function TasksPage() {
           >
             <SelectTrigger className="w-fit" size="sm">
               <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
-              <SelectValue placeholder="Sort" />
+              <SelectValue>
+                {(value: string | null) =>
+                  SORT_OPTIONS.find((o) => o.value === value)?.label ?? "Sort"
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {SORT_OPTIONS.map(({ value, label }) => (
